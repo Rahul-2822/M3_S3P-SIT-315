@@ -1,0 +1,37 @@
+#include <iostream>
+#include <vector>
+#include <thread>
+#include <chrono>
+
+void addVectors(const std::vector<float>& A, const std::vector<float>& B, std::vector<float>& C, int start, int end) {
+    for (int i = start; i < end; i++) {
+        C[i] = A[i] + B[i];
+    }
+}
+
+int main() {
+    const int N = 20000000;
+    const int num_threads = std::thread::hardware_concurrency();
+    std::vector<float> A(N, 1.0f);
+    std::vector<float> B(N, 2.0f);
+    std::vector<float> C(N);
+    std::vector<std::thread> threads;
+
+    int chunkSize = N / num_threads;
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < num_threads; i++) {
+        int s = i * chunkSize;
+        int e = (i == num_threads - 1) ? N : s + chunkSize;
+        threads.push_back(std::thread(addVectors, std::ref(A), std::ref(B), std::ref(C), s, e));
+    }
+
+    for (auto& t : threads) t.join();
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> duration = end - start;
+    std::cout << "Multi-threaded Execution Time: " << duration.count() << " ms\n";
+
+    return 0;
+}
